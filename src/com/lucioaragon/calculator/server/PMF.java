@@ -1,3 +1,9 @@
+/**
+ * PMF.java
+ * 
+ * Defines a singleton-like class to get persistent manager factory
+ */
+
 package com.lucioaragon.calculator.server;
 
 import javax.jdo.JDOHelper;

@@ -1,61 +1,76 @@
+/**
+ * Calculator.java
+ * 
+ * Basic calculator by Lucio Aragón González
+ */
+
 package com.lucioaragon.calculator.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.FlexTable.FlexCellFormatter;
-import com.lucioaragon.calculator.shared.BinaryNumb;
-import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
-import com.google.gwt.user.client.ui.ScrollPanel;
-import com.google.gwt.user.client.ui.VerticalPanel;
+import com.lucioaragon.calculator.shared.BinaryNumb;
+import com.sencha.gxt.widget.core.client.ContentPanel;
 import com.sencha.gxt.widget.core.client.button.TextButton;
+import com.sencha.gxt.widget.core.client.container.CenterLayoutContainer;
+import com.sencha.gxt.widget.core.client.container.VerticalLayoutContainer;
 import com.sencha.gxt.widget.core.client.event.SelectEvent;
 import com.sencha.gxt.widget.core.client.event.SelectEvent.SelectHandler;
 import com.sencha.gxt.widget.core.client.form.TextField;
 
 /**
- * Entry point classes define <code>onModuleLoad()</code>.
+ * Main class and application's entry point
  */
 public class Calculator implements EntryPoint {
-	/**
-	 * Create a remote service proxy to talk to the server-side Greeting service.
-	 */
-	private final DataStoreServiceAsync dataStoreService = GWT.create(DataStoreService.class);
-	public static final int BUTTON_WIDTH = 50;
-	public static final String SHOW_MESSAGE = "Show stored numbers";
-	public static final String HIDE_MESSAGE = "Hide stored numbers";
+	public static final int MAX_WIDTH = 600;
+	public static final int MAX_HEIGHT = 600;
+	public static final int BUTTON_WIDTH = 70;
+	public static final int BUTTON_HEIGHT = 30;
+	public static final int BUTTON_SPACING = 5;
 
-	private VerticalPanel mainPanel = new VerticalPanel();
+	// Create a remote service proxy to talk to the server-side Greeting service.
+	private final DataStoreServiceAsync dataStoreService = GWT.create(DataStoreService.class);
+
+	// layout elements
+	private CenterLayoutContainer mainPanel = new CenterLayoutContainer();
+	private VerticalLayoutContainer verticalPanel = new VerticalLayoutContainer();
+	private CenterLayoutContainer buttonsPanel2 = new CenterLayoutContainer();
+	private ContentPanel buttonsPanel = new ContentPanel();
 	private FlexTable buttonsLayout = new FlexTable();
 	private ArrayList<TextButton> buttons = new ArrayList<TextButton>();
+	private TextField textInput = new TextField();
+	NumbersGrid numbersGrid = new NumbersGrid();
+
+	// Data
 	private ArrayList<String> buttonTexts = new ArrayList<String>();
 	private ArrayList<BinaryNumb> results;
-	private TextField textInput = new TextField();
 	private float currentValue = 0;
 	private float storedValue = 0;
 	private enum operationType {NONE, ADD, SUB, MUL, DIV, PER, NEG, BIN};
 	private operationType operation;
 	private boolean deleteInput;
-	final Label errorLabel = new Label();
-	private FlexTable numbersTable = new FlexTable();
-	TextButton showResultsButton;
 	
 	/**
 	 * This is the entry point method.
 	 */
 	public void onModuleLoad() {
+		buildLayout();
 		reset();
-		
-		textInput.setWidth(BUTTON_WIDTH * 3);
-		showResultsButton = new TextButton("Show stored numbers", onShowButtonClicked);
+	}
+	
+	/**
+	 * Build the layout
+	 */
+	private void buildLayout() {
+		textInput.setWidth(BUTTON_WIDTH * 3 + BUTTON_SPACING * 2);
+		textInput.setHeight(BUTTON_HEIGHT);
 
-		//textInput.addKeyPressHandler(onTextInputChange);
 		Collections.addAll(buttonTexts,                "C",  "CE",
 										"7", "8", "9", "+/-", "%",
 										"4", "5", "6", "+",  "-",
@@ -65,6 +80,7 @@ public class Calculator implements EntryPoint {
 		for (int i = 0; i < buttonTexts.size(); i++) {
 			final TextButton newButton = new TextButton(buttonTexts.get(i), onButtonClicked);
 			newButton.setWidth(BUTTON_WIDTH);
+			newButton.setHeight(BUTTON_HEIGHT);
 			buttons.add(newButton);
 		}
 
@@ -95,13 +111,21 @@ public class Calculator implements EntryPoint {
 		FlexCellFormatter cellFormatter = buttonsLayout.getFlexCellFormatter();
 		cellFormatter.setColSpan(0, 0, 3);
 		
-		numbersTable.setVisible(false);
-		mainPanel.add(buttonsLayout);
-		mainPanel.add(showResultsButton);
-		mainPanel.add(numbersTable);
-		RootPanel.get("calculator").add(mainPanel);
+		buttonsPanel2.setSize(String.valueOf(MAX_WIDTH),
+				String.valueOf(BUTTON_HEIGHT * 5 + BUTTON_SPACING * 4 + 40) );
+		buttonsPanel2.add(buttonsLayout);
+		buttonsLayout.setCellSpacing(BUTTON_SPACING);
+		buttonsPanel.setHeading("Basic calculator");
+		buttonsPanel.add(buttonsPanel2);
+		verticalPanel.setSize("600", "600");
+		verticalPanel.add(buttonsPanel);
+		mainPanel.add(verticalPanel);
+		RootPanel.get().add(mainPanel);
 	}
-	
+
+	/**
+	 * Handler triggered when a calculator button is selected
+	 */
 	SelectHandler onButtonClicked = new SelectHandler() {
 		@Override
 		public void onSelect(SelectEvent event) {
@@ -118,71 +142,82 @@ public class Calculator implements EntryPoint {
 			case "8":
 			case "9":
 			case ".":
+				// [0-9] or '.' buttons update textInput value
 				String actualValue = textInput.getValue();
-				if (actualValue == "0" || deleteInput)
+				if (Float.parseFloat(actualValue) == 0 || deleteInput)
 					actualValue = "";
 				deleteInput = false;
 				actualValue += source.getText();
 				textInput.setValue(actualValue);
 				break;
+				
 			case "C":
+				// 'C' button resets the calculator 
 				reset();
 				break;
 			case "CE":
+				// 'CE' button clears current input
 				currentValue = 0;
 				textInput.setValue(String.valueOf(currentValue));
 				break;
+				
 			case "+":
+				// '+' sets add operation
+				// also performs pending operation
 				makeOperation(operationType.ADD);
 				break;
+
 			case "-":
+				// '-' sets substract operation
+				// also performs pending operation
 				makeOperation(operationType.SUB);
 				break;
+
 			case "*":
+				// '*' sets multiply operation
+				// also performs pending operation
 				makeOperation(operationType.MUL);
 				break;
+
 			case "/":
+				// '/' sets divide operation
+				// also performs pending operation
 				makeOperation(operationType.DIV);
 				break;
+
 			case "=":
+				// '=' makes pending operation
 				makeOperation(operationType.NONE);
 				break;
+
 			case "%":
+				// '%' changes input value as a percentage of stored value
 				makeOperation(operationType.PER);
 				break;
+
 			case "+/-":
+				// '+/-' changes input sign
+				deleteInput = false;
 				makeOperation(operationType.NEG);
 				break;
+
 			case "Bin":
-				convertToBinary(currentValue);
-				
+				// Converts current input to binary
+				// Also stores the number in server,
+				// retrieve the current stored numbers
+				// and shows them in a grid
+				convertToBinary();
 				break;
+
 			default:
 				break;
 			}
 		}
 	};
 
-	SelectHandler onShowButtonClicked = new SelectHandler() {
-		@Override
-		public void onSelect(SelectEvent event) {
-			boolean isVisible = numbersTable.isVisible();
-			TextButton source = (TextButton) event.getSource();
-			getNumbersFromServer();
-			source.setText(isVisible ? SHOW_MESSAGE : HIDE_MESSAGE);
-			numbersTable.setVisible(!isVisible);
-		}
-	};
-
-/*	KeyPressHandler onTextInputChange = new KeyPressHandler() {
-		@Override
-		public void onKeyPress(KeyPressEvent event) {
-			if ((event.getCharCode() < '1' && event.getCharCode() > '0') &&
-				(event.getCharCode() != '.'))
-				event.stopPropagation();
-		}
-	};
-*/
+	/**
+	 * Reset calculator to initial state
+	 */
 	private void reset() {
 		currentValue = storedValue = 0;
 		deleteInput = false;
@@ -190,18 +225,11 @@ public class Calculator implements EntryPoint {
 		textInput.setValue(String.valueOf(currentValue));
 	}
 
-	protected void convertToBinary(float currentValue2) {
-		sendNumberToServer();
-/*	    String binaryOutput = new String("");
-	    int bits = Float.floatToIntBits(currentValue2);
-	    // Extract each bit from 'bits' and compare it by '0'
-	    for (int i=31; i>=0; --i) {
-	    	binaryOutput += (bits & (1 << i)) == 0 ? "0" : "1";
-	    }
-	    textInput.setValue(binaryOutput);
-*/
-	}
-
+	/**
+	 * Perform the desired operation.
+	 * 
+	 * @param op {@link operationType}
+	 */
 	protected void makeOperation(operationType op) {
 		// get value from text input
 		currentValue = Float.parseFloat(textInput.getText());
@@ -209,8 +237,10 @@ public class Calculator implements EntryPoint {
 		// "+/-" is an unary operation, which alters the sign of
 		// current input value
 		if (op == operationType.NEG) {
-			currentValue = -currentValue; 
+			currentValue = -currentValue;
 			textInput.setValue(String.valueOf(currentValue));
+			if (operation == operationType.NONE)
+				storedValue = currentValue;
 		}
 
 		// "%" is an binary operation, which sets current input value as
@@ -245,6 +275,8 @@ public class Calculator implements EntryPoint {
 		// "+", "-", "*" and "/" operations set stored value, shows it in text
 		// input and mark it to be deleted when a new input is added.
 		if (op != operationType.PER && op != operationType.NEG) {
+			if (operation == operationType.NONE)
+				storedValue = 0; 
 			if (storedValue == 0)
 				storedValue = currentValue;
 			operation = op;
@@ -254,77 +286,51 @@ public class Calculator implements EntryPoint {
 	}
 
 	/**
-	 * Send the number to the server to convert it to binary
-	 * and store it
+	 * Send the number to the server to convert it to binary.
+	 * Also store the number in the server
 	 */
-	private void sendNumberToServer() {
-		// Validate the input. is a number?
-		errorLabel.setText("");
+	private void convertToBinary() {
 		String textToServer = textInput.getText();
-		if (Float.isNaN(Float.parseFloat(textToServer))) {
-			errorLabel.setText("Please enter a number");
-			return;
-		}
 
-		// Then, we send the input to the server.
+		// Send the input to the server.
 		dataStoreService.convertToBinary(textToServer, new AsyncCallback<String>() {
-			public void onFailure(Throwable caught) {
-				// Show the RPC error message to the user
-/*				dialogBox.setText("Remote Procedure Call - Failure");
-				serverResponseLabel.addStyleName("serverResponseLabelError");
-				serverResponseLabel.setHTML(SERVER_ERROR);
-				dialogBox.center();
-				closeButton.setFocus(true);
-*/			}
 
+			@Override
+			public void onFailure(Throwable caught) {
+			}
+
+			@Override
 			public void onSuccess(String result) {
+				// Get currently stored numbers
 				getNumbersFromServer();
 			}
 		});
 	}
 	
 	/**
-	 * Send the number to the server to convert it to binary
-	 * and store it
+	 * Get currently stored numbers from the server
 	 */
 	private void getNumbersFromServer() {
 		dataStoreService.getCurrentNumbers(new AsyncCallback<ArrayList<BinaryNumb>>() {
-	
+
 			@Override
 			public void onFailure(Throwable caught) {
-				// TODO Auto-generated method stub
 			}
-	
+
 			@Override
 			public void onSuccess(ArrayList<BinaryNumb> result) {
+				// retrieve the stored numbers, and show them
 				results = result;
 				buildNumbersTable();
 			}
 		});
 	}
 
+	/**
+	 * Builds a grid showing all currently stored numbers
+	 */
 	private void buildNumbersTable() {
-    	numbersTable.clear();
-		numbersTable.setText(0, 0, "Date");
-		numbersTable.setText(0, 1, "Original Number");
-		numbersTable.setText(0, 2, "Binary (IEEE 754 FP bit layout)");
-		// Add styles to elements in the stock list table.
-    	numbersTable.setCellPadding(6);
-    	numbersTable.addStyleName("watchList");
-    	numbersTable.getRowFormatter().addStyleName(0, "watchListHeader");
-
-    	Iterator<BinaryNumb> iter = results.iterator();
-	    int row = 1;
-	    while(iter.hasNext()) {
-	    	BinaryNumb item = iter.next();
-	    	numbersTable.setText(row, 0, item.getDate());
-	    	numbersTable.setText(row, 1, item.getOriginalNumber());
-	    	numbersTable.setText(row, 2, item.getConvertedNumber());
-	    	numbersTable.getCellFormatter().addStyleName(row, 0, "watchListNumericColumn");
-	    	numbersTable.getCellFormatter().addStyleName(row, 1, "watchListNumericColumn");
-	    	numbersTable.getCellFormatter().addStyleName(row, 2, "watchListNumericColumn");
-	    	row++;
-	    }
+		numbersGrid.setData(results);
+		verticalPanel.add(numbersGrid);
 	}
-
 }

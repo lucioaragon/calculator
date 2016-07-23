@@ -1,3 +1,9 @@
+/**
+ * DataStoreServiceImpl.jar
+ * 
+ * The server-side implementation of the RPC service.
+ */
+
 package com.lucioaragon.calculator.server;
 
 import java.util.ArrayList;
@@ -9,14 +15,14 @@ import com.lucioaragon.calculator.client.DataStoreService;
 import com.lucioaragon.calculator.shared.BinaryNumb;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
-/**
- * The server-side implementation of the RPC service.
- */
 @SuppressWarnings("serial")
 public class DataStoreServiceImpl extends RemoteServiceServlet implements DataStoreService {
 	
 	PersistenceManager pm = PMF.get().getPersistenceManager();
 
+	/**
+	 * Converts the input argument to binary, and also stores it in server
+	 */
 	public String convertToBinary(String input) throws IllegalArgumentException {
 		float number = Float.parseFloat(input);
 		
@@ -45,6 +51,9 @@ public class DataStoreServiceImpl extends RemoteServiceServlet implements DataSt
 		return actualDate.toString() + " - " + input + " - " + binaryOutput;
 	}
 	
+	/**
+	 * Returns all currently stored numbers
+	 */
 	public ArrayList<BinaryNumb> getCurrentNumbers(){
 		Extent<BinaryNumb> numbers = null;
 		ArrayList<BinaryNumb> numbersList = new ArrayList<BinaryNumb>();
