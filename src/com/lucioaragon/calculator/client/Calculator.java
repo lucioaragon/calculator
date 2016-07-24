@@ -48,12 +48,26 @@ public class Calculator implements EntryPoint {
 	NumbersGrid numbersGrid = new NumbersGrid();
 
 	// Data
+	// Texts for each calculator button
 	private ArrayList<String> buttonTexts = new ArrayList<String>();
+	
+	// List of numbers stored in server already retrieved
 	private ArrayList<BinaryNumb> results;
+	
+	// Value in text input
 	private float currentValue = 0;
+	
+	// Value stored in memory, which will operate with current input
 	private float storedValue = 0;
+	
+	// Type of operation that can be done
 	private enum operationType {NONE, ADD, SUB, MUL, DIV, PER, NEG, BIN};
+	
+	// Type of operation which will be done
 	private operationType operation;
+	
+	// Mark current input to be deleted after an operation is done and new input
+	// is introduced
 	private boolean deleteInput;
 	
 	/**
@@ -70,6 +84,7 @@ public class Calculator implements EntryPoint {
 	private void buildLayout() {
 		textInput.setWidth(BUTTON_WIDTH * 3 + BUTTON_SPACING * 2);
 		textInput.setHeight(BUTTON_HEIGHT);
+		//textInput.setDirection(Direction.RTL);
 
 		Collections.addAll(buttonTexts,                "C",  "CE",
 										"7", "8", "9", "+/-", "%",
@@ -117,7 +132,7 @@ public class Calculator implements EntryPoint {
 		buttonsLayout.setCellSpacing(BUTTON_SPACING);
 		buttonsPanel.setHeading("Basic calculator");
 		buttonsPanel.add(buttonsPanel2);
-		verticalPanel.setSize("600", "600");
+		verticalPanel.setSize(String.valueOf(MAX_WIDTH), String.valueOf(MAX_WIDTH));
 		verticalPanel.add(buttonsPanel);
 		mainPanel.add(verticalPanel);
 		RootPanel.get().add(mainPanel);
@@ -144,9 +159,12 @@ public class Calculator implements EntryPoint {
 			case ".":
 				// [0-9] or '.' buttons update textInput value
 				String actualValue = textInput.getValue();
-				if (Float.parseFloat(actualValue) == 0 || deleteInput)
+				if ((Float.parseFloat(actualValue) == 0 && !actualValue.contains("."))
+						|| deleteInput)
 					actualValue = "";
 				deleteInput = false;
+				if (actualValue == "" && source.getText() == ".")
+					actualValue += "0";
 				actualValue += source.getText();
 				textInput.setValue(actualValue);
 				break;
@@ -197,7 +215,6 @@ public class Calculator implements EntryPoint {
 
 			case "+/-":
 				// '+/-' changes input sign
-				deleteInput = false;
 				makeOperation(operationType.NEG);
 				break;
 
@@ -232,15 +249,22 @@ public class Calculator implements EntryPoint {
 	 */
 	protected void makeOperation(operationType op) {
 		// get value from text input
-		currentValue = Float.parseFloat(textInput.getText());
+		currentValue = Float.parseFloat(textInput.getValue());
+		if (Float.isNaN(currentValue)) {
+			currentValue = 0;
+			textInput.setValue(String.valueOf(currentValue));
+			return;
+		}
+		
+		// get previous stored value, if it's changed, it will be updated
+		// at the end of this method
+		float previousValue = storedValue;
 		
 		// "+/-" is an unary operation, which alters the sign of
 		// current input value
 		if (op == operationType.NEG) {
 			currentValue = -currentValue;
 			textInput.setValue(String.valueOf(currentValue));
-			if (operation == operationType.NONE)
-				storedValue = currentValue;
 		}
 
 		// "%" is an binary operation, which sets current input value as
@@ -251,6 +275,7 @@ public class Calculator implements EntryPoint {
 				currentValue = 0;
 			else
 				currentValue = storedValue * currentValue / 100;
+			
 			textInput.setValue(String.valueOf(currentValue));
 		}
 		
@@ -258,15 +283,19 @@ public class Calculator implements EntryPoint {
 		// current input value.
 		// This operation is executed after a second operator is added
 		else if (operation == operationType.ADD) {
+			previousValue = currentValue; // force change of previousValue
 			storedValue += currentValue; 
 		}
 		else if (operation == operationType.SUB) {
+			previousValue = currentValue; // force change of previousValue
 			storedValue -= currentValue; 
 		}
 		else if (operation == operationType.MUL) {
+			previousValue = currentValue; // force change of previousValue
 			storedValue *= currentValue; 
 		}
 		else if (operation == operationType.DIV) {
+			previousValue = currentValue; // force change of previousValue
 			storedValue /= currentValue; 
 		}
 
@@ -275,9 +304,7 @@ public class Calculator implements EntryPoint {
 		// "+", "-", "*" and "/" operations set stored value, shows it in text
 		// input and mark it to be deleted when a new input is added.
 		if (op != operationType.PER && op != operationType.NEG) {
-			if (operation == operationType.NONE)
-				storedValue = 0; 
-			if (storedValue == 0)
+			if (op != operationType.NONE && storedValue == previousValue)
 				storedValue = currentValue;
 			operation = op;
 			textInput.setValue(String.valueOf(storedValue));
