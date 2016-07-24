@@ -1,0 +1,2 @@
+serviceClass: com.lucioaragon.calculator.client.DataStoreService
+path: 9957EAF8972E18D7725BB03CA87C8B90.gwt.rpc

@@ -1,0 +1,3 @@
+# Module calculator
+# RPC service class, partial path of RPC policy file
+com.lucioaragon.calculator.client.DataStoreService, 9957EAF8972E18D7725BB03CA87C8B90.gwt.rpc
