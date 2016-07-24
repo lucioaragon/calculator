@@ -48,7 +48,7 @@ public class DataStoreServiceImpl extends RemoteServiceServlet implements DataSt
 	        //pm.close();
 	    }
 	    
-		return actualDate.toString() + " - " + input + " - " + binaryOutput;
+		return binaryOutput;
 	}
 	
 	/**

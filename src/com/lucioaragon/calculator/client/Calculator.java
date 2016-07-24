@@ -30,7 +30,7 @@ import com.sencha.gxt.widget.core.client.form.TextField;
 public class Calculator implements EntryPoint {
 	public static final int MAX_WIDTH = 600;
 	public static final int MAX_HEIGHT = 600;
-	public static final int BUTTON_WIDTH = 70;
+	public static final int BUTTON_WIDTH = 80;
 	public static final int BUTTON_HEIGHT = 30;
 	public static final int BUTTON_SPACING = 5;
 
@@ -84,7 +84,8 @@ public class Calculator implements EntryPoint {
 	private void buildLayout() {
 		textInput.setWidth(BUTTON_WIDTH * 3 + BUTTON_SPACING * 2);
 		textInput.setHeight(BUTTON_HEIGHT);
-		//textInput.setDirection(Direction.RTL);
+		textInput.disable();
+		textInput.setStyleName("black");
 
 		Collections.addAll(buttonTexts,                "C",  "CE",
 										"7", "8", "9", "+/-", "%",
@@ -256,6 +257,17 @@ public class Calculator implements EntryPoint {
 			return;
 		}
 		
+		// Between operations a new number has to be entered
+		// Avoid performing operations by just clicking to operation buttons
+		// This is solved by changing current value to operation's neutral
+		// operand (Multiply, Div = 1) (Add, Sub, Eq = 0) and then performing
+		// the operation, so resulting value will be the same as entered.
+		if (deleteInput && operation != operationType.NONE &&
+			(op == operationType.ADD || op == operationType.SUB ||
+			 op == operationType.MUL || op == operationType.DIV ||
+			 op == operationType.NONE))
+			currentValue = (operation == operationType.MUL || operation == operationType.DIV) ? 1 : 0;
+					
 		// get previous stored value, if it's changed, it will be updated
 		// at the end of this method
 		float previousValue = storedValue;
@@ -328,6 +340,10 @@ public class Calculator implements EntryPoint {
 
 			@Override
 			public void onSuccess(String result) {
+				// Reset calculator, show converted number in input
+				reset();
+				textInput.setText(result);
+				deleteInput = true;
 				// Get currently stored numbers
 				getNumbersFromServer();
 			}
