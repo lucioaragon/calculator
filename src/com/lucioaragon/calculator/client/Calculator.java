@@ -45,7 +45,8 @@ public class Calculator implements EntryPoint {
 	private FlexTable buttonsLayout = new FlexTable();
 	private ArrayList<TextButton> buttons = new ArrayList<TextButton>();
 	private TextField textInput = new TextField();
-	NumbersGrid numbersGrid = new NumbersGrid();
+	private NumbersGrid numbersGrid = new NumbersGrid();
+	private TextButton refreshButton;
 
 	// Data
 	// Texts for each calculator button
@@ -86,7 +87,11 @@ public class Calculator implements EntryPoint {
 		textInput.setHeight(BUTTON_HEIGHT);
 		textInput.disable();
 		textInput.setStyleName("black");
+		
+		// Build Refresh button, which will refresh the list of stored numbers
+		refreshButton = new TextButton("Refresh", onRefreshButtonClicked);
 
+		// Build calculator buttons
 		Collections.addAll(buttonTexts,                "C",  "CE",
 										"7", "8", "9", "+/-", "%",
 										"4", "5", "6", "+",  "-",
@@ -127,6 +132,7 @@ public class Calculator implements EntryPoint {
 		FlexCellFormatter cellFormatter = buttonsLayout.getFlexCellFormatter();
 		cellFormatter.setColSpan(0, 0, 3);
 		
+		// Build layout containers
 		buttonsPanel2.setSize(String.valueOf(MAX_WIDTH),
 				String.valueOf(BUTTON_HEIGHT * 5 + BUTTON_SPACING * 4 + 40) );
 		buttonsPanel2.add(buttonsLayout);
@@ -138,6 +144,16 @@ public class Calculator implements EntryPoint {
 		mainPanel.add(verticalPanel);
 		RootPanel.get().add(mainPanel);
 	}
+
+	/**
+	 * Handler triggered when the refresh button is selected
+	 */
+	SelectHandler onRefreshButtonClicked = new SelectHandler() {
+		@Override
+		public void onSelect(SelectEvent event) {
+			getNumbersFromServer();
+		}
+	};
 
 	/**
 	 * Handler triggered when a calculator button is selected
@@ -364,7 +380,7 @@ public class Calculator implements EntryPoint {
 			public void onSuccess(ArrayList<BinaryNumb> result) {
 				// retrieve the stored numbers, and show them
 				results = result;
-				buildNumbersTable();
+				refreshGrid();
 			}
 		});
 	}
@@ -372,8 +388,9 @@ public class Calculator implements EntryPoint {
 	/**
 	 * Builds a grid showing all currently stored numbers
 	 */
-	private void buildNumbersTable() {
+	private void refreshGrid() {
 		numbersGrid.setData(results);
 		verticalPanel.add(numbersGrid);
+		verticalPanel.add(refreshButton);
 	}
 }

@@ -25,10 +25,11 @@ import com.sencha.gxt.widget.core.client.grid.Grid;
 public class NumbersGrid implements IsWidget {
 	public static final int HEIGHT = 320;
 	
-	ArrayList<BinaryNumb> items;
+	private ArrayList<BinaryNumb> items;
 	
 	private static final BinaryNumberProperties numbers = GWT.create(BinaryNumberProperties.class);
-	
+	private ListStore<BinaryNumb> store = new ListStore<BinaryNumb>(numbers.key());
+	private Grid<BinaryNumb> grid;	
 	private ContentPanel panel;
 	
 	@Override
@@ -46,10 +47,9 @@ public class NumbersGrid implements IsWidget {
 			
 			ColumnModel<BinaryNumb> cm = new ColumnModel<BinaryNumb>(columns);
 			
-			ListStore<BinaryNumb> store = new ListStore<BinaryNumb>(numbers.key());
 			store.addAll(items);
 			
-			final Grid<BinaryNumb> grid = new Grid<BinaryNumb>(store, cm);
+			grid = new Grid<BinaryNumb>(store, cm);
 			grid.setAllowTextSelection(true);
 			grid.getView().setAutoExpandColumn(dateCol);
 			grid.getView().setAutoExpandColumn(originalCol);
@@ -72,7 +72,6 @@ public class NumbersGrid implements IsWidget {
 			panel.setCollapsible(true);
 			panel.add(con);
 			panel.setHeight(String.valueOf(HEIGHT));
-	
 		}
 
 		return panel;
@@ -84,5 +83,11 @@ public class NumbersGrid implements IsWidget {
 	 */
 	public void setData(ArrayList<BinaryNumb> items) {
 		this.items = items;
+		
+		// If store already has items, replace them, and refresh grid
+		if (store.size() > 0) {
+			store.replaceAll(items);
+			grid.getView().refresh(false);
+		}
 	}
 }
